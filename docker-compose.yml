@@ -1,0 +1,17 @@
+services:
+  niceblog:
+    image: khannover/niceblog:latest
+    build: .
+    container_name: niceblog
+    volumes:
+      - ./.nicegui:/app/.nicegui
+    ports:
+      - 1080:1080
+    environment:
+      - "NICEBLOG_USER=username"
+      - "NICEBLOG_PASSWORD=password"
+      - "NICEBLOG_HEADER_NAME=NiceBLOG DEMO"
+      - "NICEBLOG_HEADER_TITLE=A minimal blog engine, written in NiceGUI"
+      - "NICEBLOG_STORAGE_SECRET=fuduekfur733irkdj"
+      - "NICEBLOG_LANGUAGE=de-DE"
+      - "NICEBLOG_TIMEZONE=Europe/Berlin"
