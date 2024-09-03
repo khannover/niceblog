@@ -254,7 +254,7 @@ async def root(request:Request):
     
     for page in list(pages.keys()):
         if not app.storage.user["is_mobile"]:
-            with ui.row().classes("items-center justify-center ms-[auto] me-[auto]]"):
+            with ui.row().classes("items-center justify-center ms-[auto] me-[auto]] w-full"):
                 with ui.link(target="/show/" + pages[page]["id"]).style("text-decoration:none").classes("text-white"):
                     with ui.grid(columns="1fr 2fr 2fr 1fr").classes("items-center justify-center"):                
                         ui.label()
@@ -265,7 +265,7 @@ async def root(request:Request):
                             ui.markdown(pages[page]["text"].split("\n")[0], extras=markdown_extras)
                         ui.label()
         else: #mobile
-            with ui.row().classes("items-center justify-center ms-[auto] me-[auto]"):
+            with ui.row().classes("items-center justify-center ms-[auto] me-[auto] w-full"):
                 with ui.link(target="/show/" + pages[page]["id"]).style("text-decoration:none").classes("text-white"):
                     with ui.grid(columns="1fr 2fr").classes("items-center justify-center"):                
                         ui.image(pages[page]["image"]).classes("w-32") if pages[page]["image"] != "" else ui.label()  
