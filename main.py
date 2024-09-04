@@ -92,7 +92,7 @@ def deal_with_naughty_bots(request:Request, response:Response):
         app.storage.general["blocked_ips"].append(client_ip)
 
     print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "| malicious request from ip", client_ip, "|", request.url)
-    return redirectResponse("https://httpbin.org/delay/10")
+    return RedirectResponse("https://httpbin.org/delay/10")
 
 def get_client_ip(request:Request):
         # Prüfen, ob der X-Forwarded-For-Header gesetzt ist
