@@ -5,7 +5,7 @@ import pytz
 
 from typing import Optional
 
-from fastapi import Request, Response, RedirectResponse
+from fastapi import Request, Response
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
