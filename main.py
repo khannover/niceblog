@@ -19,6 +19,50 @@ markdown_extras = ['fenced-code-blocks', 'tables', 'mermaid']
 passwords = {os.environ["NICEBLOG_USER"]: os.environ["NICEBLOG_PASSWORD"]}
 
 unrestricted_page_routes = {'/login', '/show'}
+malicious_page_routes = [
+    "/.aws/credentials",
+    "/.env",
+    "/.env.production",
+    "/.git/HEAD",
+    "/.kube/config",
+    "/.ssh/id_ecdsa",
+    "/.ssh/id_ed25519",
+    "/.ssh/id_rsa",
+    "/.svn/wc.db",
+    "/.vscode/sftp.json",
+    "/Public/home/js/check.js",
+    "/_vti_pvt/administrators.pwd",
+    "/_vti_pvt/authors.pwd",
+    "/_vti_pvt/service.pwd",
+    "/api/.env",
+    "/backup.sql",
+    "/backup.tar.gz",
+    "/backup.zip",
+    "/cloud-config.yml",
+    "/config.json",
+    "/config.php",
+    "/config.xml",
+    "/config.yaml",
+    "/config.yml",
+    "/config/database.php",
+    "/config/production.json",
+    "/database.sql",
+    "/docker-compose.yml",
+    "/dump.sql",
+    "/etc/shadow",
+    "/etc/ssl/private/server.key",
+    "/feed",
+    "/phpinfo.php",
+    "/secrets.json",
+    "/server-status",
+    "/server.key",
+    "/static/admin/javascript/hetong.js",
+    "/user_secrets.yml",
+    "/web.config",
+    "/wordpress/wp-admin/setup-config.php",
+    "/wp-admin/setup-config.php",
+    "/wp-config.php",
+]
 
 class AuthMiddleware(BaseHTTPMiddleware):
     """This middleware restricts access to all NiceGUI pages.
@@ -29,6 +73,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if not app.storage.user.get('authenticated', False):
             if not request.url.path.startswith('/_nicegui'):
+                if request.url.path in malicious_page_routes:
+                    return deal_with_naughty_bots(request)
                 if request.url.path == "/":
                     return await call_next(request)
                 for r in unrestricted_page_routes:
@@ -41,49 +87,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(AuthMiddleware)
 
-@ui.page("/.aws/credentials")
-@ui.page("/.env")
-@ui.page("/.env.production")
-@ui.page("/.git/HEAD")
-@ui.page("/.kube/config")
-@ui.page("/.ssh/id_ecdsa")
-@ui.page("/.ssh/id_ed25519")
-@ui.page("/.ssh/id_rsa")
-@ui.page("/.svn/wc.db")
-@ui.page("/.vscode/sftp.json")
-@ui.page("/Public/home/js/check.js")
-@ui.page("/_vti_pvt/administrators.pwd")
-@ui.page("/_vti_pvt/authors.pwd")
-@ui.page("/_vti_pvt/service.pwd")
-@ui.page("/api/.env")
-@ui.page("/backup.sql")
-@ui.page("/backup.tar.gz")
-@ui.page("/backup.zip")
-@ui.page("/cloud-config.yml")
-@ui.page("/config.json")
-@ui.page("/config.php")
-@ui.page("/config.xml")
-@ui.page("/config.yaml")
-@ui.page("/config.yml")
-@ui.page("/config/database.php")
-@ui.page("/config/production.json")
-@ui.page("/database.sql")
-@ui.page("/docker-compose.yml")
-@ui.page("/dump.sql")
-@ui.page("/etc/shadow")
-@ui.page("/etc/ssl/private/server.key")
-@ui.page("/feed")
-@ui.page("/phpinfo.php")
-@ui.page("/secrets.json")
-@ui.page("/server-status")
-@ui.page("/server.key")
-@ui.page("/static/admin/javascript/hetong.js")
-@ui.page("/user_secrets.yml")
-@ui.page("/web.config")
-@ui.page("/wordpress/wp-admin/setup-config.php")
-@ui.page("/wp-admin/setup-config.php")
-@ui.page("/wp-config.php")
-def deal_with_naughty_bots(request:Request, response:Response):
+
+def deal_with_naughty_bots(request:Request):
     if not app.storage.general.get("blocked_ips"):
         app.storage.general["blocked_ips"] = []
     
