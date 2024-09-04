@@ -5,7 +5,7 @@ import pytz
 
 from typing import Optional
 
-from fastapi import Request
+from fastapi import Request, Response, RedirectResponse
 from fastapi.responses import RedirectResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
@@ -40,6 +40,76 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(AuthMiddleware)
+
+@ui.page("/.aws/credentials")
+@ui.page("/.env")
+@ui.page("/.env.production")
+@ui.page("/.git/HEAD")
+@ui.page("/.kube/config")
+@ui.page("/.ssh/id_ecdsa")
+@ui.page("/.ssh/id_ed25519")
+@ui.page("/.ssh/id_rsa")
+@ui.page("/.svn/wc.db")
+@ui.page("/.vscode/sftp.json")
+@ui.page("/Public/home/js/check.js")
+@ui.page("/_vti_pvt/administrators.pwd")
+@ui.page("/_vti_pvt/authors.pwd")
+@ui.page("/_vti_pvt/service.pwd")
+@ui.page("/api/.env")
+@ui.page("/backup.sql")
+@ui.page("/backup.tar.gz")
+@ui.page("/backup.zip")
+@ui.page("/cloud-config.yml")
+@ui.page("/config.json")
+@ui.page("/config.php")
+@ui.page("/config.xml")
+@ui.page("/config.yaml")
+@ui.page("/config.yml")
+@ui.page("/config/database.php")
+@ui.page("/config/production.json")
+@ui.page("/database.sql")
+@ui.page("/docker-compose.yml")
+@ui.page("/dump.sql")
+@ui.page("/etc/shadow")
+@ui.page("/etc/ssl/private/server.key")
+@ui.page("/feed")
+@ui.page("/phpinfo.php")
+@ui.page("/secrets.json")
+@ui.page("/server-status")
+@ui.page("/server.key")
+@ui.page("/static/admin/javascript/hetong.js")
+@ui.page("/user_secrets.yml")
+@ui.page("/web.config")
+@ui.page("/wordpress/wp-admin/setup-config.php")
+@ui.page("/wp-admin/setup-config.php")
+@ui.page("/wp-config.php")
+def deal_with_naughty_bots(request:Request, response:Response):
+    if not app.storage.general.get("blocked_ips"):
+        app.storage.general["blocked_ips"] = []
+    
+    client_ip = get_client_ip(request)
+    if not is_ip_blocked(client_ip):
+        app.storage.general["blocked_ips"].append(client_ip)
+
+    print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "| malicious request from ip", client_ip, "|", request.url)
+    return redirectResponse("https://httpbin.org/delay/10")
+
+def get_client_ip(request:Request):
+        # Prüfen, ob der X-Forwarded-For-Header gesetzt ist
+    forwarded_for = request.headers.get('X-Forwarded-For')
+    if forwarded_for:
+        # Falls mehrere IPs in der Liste stehen, die erste ist die Client-IP
+        client_ip = forwarded_for.split(",")[0].strip()
+    else:
+        # Andernfalls auf die direkte Client-IP zugreifen
+        client_ip = request.client.host
+    return client_ip
+
+def is_ip_blocked(ip:str):
+    if ip in app.storage.general.get("blocked_ips", []):
+        return True
+    else:
+        return False
 
 def count_visitors():
     count = 0
@@ -256,14 +326,19 @@ async def root(request:Request):
         if not app.storage.user["is_mobile"]:
             with ui.row().classes("items-center justify-center ms-[auto] me-[auto]]"):
                 with ui.link(target="/show/" + pages[page]["id"]).style("text-decoration:none").classes("text-white"):
-                    with ui.grid(columns="1fr 2fr 2fr 1fr").classes("items-center justify-center"):                
+                    with ui.grid(columns="1fr 1fr 2fr 1fr").classes("items-center justify-center"):                
                         ui.label()
-                        ui.image(pages[page]["image"]).classes("w-64") if pages[page]["image"] != "" else ui.label()  
-                        with ui.column():
-                            ui.badge(f'{pages[page]["datetime"]}')
-                            ui.label(f'{pages[page]["headline"]}').classes("text-2xl")        
-                            ui.markdown(pages[page]["text"].split("\n")[0], extras=markdown_extras)
+                        with ui.row():
+                            ui.space()
+                            ui.image(pages[page]["image"]).classes("w-96") if pages[page]["image"] != "" else ui.label()  
+                        with ui.row():
+                            with ui.column():
+                                ui.badge(f'{pages[page]["datetime"]}')
+                                ui.label(f'{pages[page]["headline"]}').classes("text-2xl")        
+                                ui.markdown(pages[page]["text"].split("\n")[0], extras=markdown_extras)
+                            ui.space()
                         ui.label()
+            ui.separator()
         else: #mobile
             with ui.row().classes("items-center justify-center ms-[auto] me-[auto]"):
                 with ui.link(target="/show/" + pages[page]["id"]).style("text-decoration:none").classes("text-white"):
