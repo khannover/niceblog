@@ -266,7 +266,7 @@ async def show(request:Request, id:str):
                         with ui.row().classes("w-full items-center justify-center"):
                             ui.image(page.get("image", None)).classes("w-[50%]")
                     with ui.row().classes("w-full justify-center"):
-                        ui.markdown(page["text"], extras=markdown_extras).classes("justify-center")
+                        ui.markdown(page["text"], extras=markdown_extras).classes("justify-center w-full")
                 ui.label()
         else: # mobile
             if app.storage.user.get('authenticated', False):
@@ -279,7 +279,7 @@ async def show(request:Request, id:str):
                 with ui.row().classes("w-full items-center justify-center"):
                     ui.image(page.get("image", None))
             with ui.row().classes("w-full justify-center"):
-                ui.markdown(page["text"], extras=markdown_extras).classes("")
+                ui.markdown(page["text"], extras=markdown_extras).classes("justify-center w-full")
     else:
         ui.label("404").classes("w-[30%] text-5xl absolute-center")
 
