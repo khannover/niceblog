@@ -99,6 +99,22 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(AuthMiddleware)
 
+def search(query:str):
+    if query == "":
+        app.storage.user["search_result"] = ""
+        return
+    result = ""
+    if not "pages" in app.storage.general:
+        return result
+    pages = app.storage.general["pages"]
+    for id in pages:
+        if query.lower() in (pages[id]["text"] + pages[id]["headline"] + pages[id]["datetime"]).lower():
+            #if pages[id]["image"]:
+            result += f'<a href="/show/{id}"><img src="{pages[id]["image"] or "https://placehold.co/600x400/888/fff?text=Kein+Bild"}" /> /show/{id}]\n</a>\n\n --- \n\n'
+            #else:
+            #    result += f'[/show/{id}](/show/{id})\n\n --- \n\n'                
+    app.storage.user["search_result"] = result
+    
 
 def deal_with_naughty_bots(request:Request):
     if not app.storage.general.get("blocked_ips"):
@@ -300,6 +316,24 @@ async def header():
         app.storage.user.clear()
         ui.navigate.to('/')
     
+    
+    def show_search_dialog():
+        search("")
+        with ui.dialog().classes("bg-dark") as dialog, ui.card().classes("w-full"):
+            with ui.row().classes("w-full"):
+                ui.label("Such-Dialog").classes("text-xs")
+                ui.space()
+                ui.button(icon="close", on_click=dialog.close).props("size=xs").classes("p-1")
+            with ui.row().classes("w-full"):
+                search_input = ui.input("Suchbegriff hier eingeben").classes("w-full")
+                search_input.on("keyup", lambda e: search(search_input.value))
+            with ui.row():
+                ui.label("Suchergebnisse:").classes("text-xs")
+            with ui.row():
+                search_result = ui.markdown().bind_content_from(app.storage.user, "search_result").classes("items-center justify-between")
+            dialog.open()
+            
+
     ui.colors(primary="#6836a1")
     if not app.storage.user["is_mobile"]:
         with ui.header().classes("justify-center").classes("bg-primary"):
@@ -310,6 +344,7 @@ async def header():
             with ui.link(target="/").classes("text-white").style("text-decoration: none;"):
                 ui.label(os.environ.get("NICEBLOG_HEADER_NAME", "NiceBLOG")).classes("text-6xl")
             ui.label(os.environ.get("NICEBLOG_HEADER_TITLE", "A minimal blog engine, written in NiceGU")).classes("text-xl mt-[auto] mb-[auto]") 
+            ui.button(icon="search", on_click=show_search_dialog).props("flat round").classes("mt-[auto] mb-[auto] text-white").tooltip("search posts")
             if app.storage.user.get('authenticated', False):
                 ui.button(on_click=lambda: ui.navigate.to("/edit/new"), icon="add").props("flat round").classes("mt-[auto] mb-[auto] text-white").tooltip("Add post")
                 ui.button(on_click=logout, icon='logout').props('flat round').classes("text-white mt-[auto] mb-[auto]").tooltip("Logout")
