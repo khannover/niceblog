@@ -325,7 +325,7 @@ async def header():
                 ui.space()
                 ui.button(icon="close", on_click=dialog.close).props("size=xs").classes("p-1")
             with ui.row().classes("w-full"):
-                search_input = ui.input("Suchbegriff hier eingeben").classes("w-full")
+                search_input = ui.input("Suchbegriff hier eingeben").classes("w-full").props("autofocus")
                 search_input.on("keyup", lambda e: search(search_input.value))
             with ui.row():
                 ui.label("Suchergebnisse:").classes("text-xs")
