@@ -25,7 +25,7 @@ docker run \
     -e "NICEBLOG_TIMEZONE=America/New_York" \
     -e "NICEBLOG_STORAGE_SECRET=fgvhgcghfxhgydywery" \
     -p 1080:1080 \
-    -v $(pwd)/data:/app/.nicegui
+    -v $(pwd)/data:/app/.nicegui \
     khannover/niceblog
 ``` 
 
