@@ -1,3 +1,5 @@
+import random
+
 from nicegui import app, ui, run, events
 from datetime import datetime
 from slugify import slugify
@@ -18,7 +20,7 @@ markdown_extras = ['fenced-code-blocks', 'tables', 'mermaid']
 # in reality users passwords would obviously need to be hashed
 passwords = {os.environ["NICEBLOG_USER"]: os.environ["NICEBLOG_PASSWORD"]}
 
-unrestricted_page_routes = {'/login', '/show'}
+unrestricted_page_routes = {'/login', '/show', '/unblock_ip_request', '/unblock_ip'}
 malicious_page_routes = [
     "/.aws/credentials",
     "/.env",
@@ -153,6 +155,10 @@ def count_visitors():
 
 @ui.page('/login')
 async def login(request:Request) -> Optional[RedirectResponse]:
+    client_ip = get_client_ip(request)
+    if is_ip_blocked(client_ip):
+        return RedirectResponse("/unblock_ip_request")
+
     ui.page_title("NiceBLOG Login")
     await detect_device(request.headers["user-agent"])
 
@@ -180,7 +186,7 @@ def edit_new():
 async def edit(request:Request, id: str):
     ui.page_title("NiceBLOG Edit " + id)
     await detect_device(request.headers["user-agent"])
-    await header()
+    await header(request)
 
     placeholder_image = "https://placehold.co/600x400"
 
@@ -274,7 +280,7 @@ async def edit(request:Request, id: str):
 async def show(request:Request, id:str):
     ui.page_title("NiceBLOG Post " + id)
     await detect_device(request.headers["user-agent"])
-    await header()
+    await header(request)
     pages = app.storage.general.get("pages", {})
     page = pages[id] if id in pages else None
 
@@ -311,7 +317,13 @@ async def show(request:Request, id:str):
     else:
         ui.label("404").classes("w-[30%] text-5xl absolute-center")
 
-async def header():
+async def header(request:Request=None):
+
+    if request:
+        client_ip = get_client_ip(request)
+        if is_ip_blocked(client_ip):
+            ui.navigate.to("/unblock_ip_request")
+
     def logout() -> None:
         app.storage.user.clear()
         ui.navigate.to('/')
@@ -370,7 +382,7 @@ async def root(request:Request):
     ui.page_title("NiceBLOG Home")
     await detect_device(request.headers["user-agent"])
 
-    await header()
+    await header(request)
     pages = app.storage.general.get("pages", {})
     pages = dict(sorted(pages.items(), reverse=True, key=lambda item: tz.localize(datetime.strptime(item[1]['datetime'], "%d.%m.%Y / %H:%M:%S"))))
     
@@ -405,6 +417,56 @@ async def root(request:Request):
 async def detect_device(ua:str):
     user_agent = parse(ua)
     app.storage.user["is_mobile"] = user_agent.is_mobile
+
+@ui.page("/unblock_ip_request")
+async def unblock_ip_request(request:Request):
+
+    ip = get_client_ip(request)
+    from captcha.image import ImageCaptcha
+
+    # Create an image instance of the given size
+    image = ImageCaptcha(width = 280, height = 90)
+
+    # Image captcha text
+    captcha_text = ''.join(random.sample("abcdefghijklmnopqrstuvwxyz1234567890", 6))
+
+    # generate the image of the given text
+    data = image.generate(captcha_text)
+
+    # write the image on the given file and save it
+    image.write(captcha_text, ip+'.png')
+    if not app.storage.user.get("unblock_requests"):
+        app.storage.user["unblock_requests"] = {}
+
+    app.storage.user["unblock_requests"][ip] = captcha_text
+    ui.label("Your IP is blocked. Please enter the following captcha to unblock it:")
+    ui.image(ip+'.png').classes("w-96").force_reload()
+    ui.input("Captcha")
+    ui.button("Unblock", on_click=lambda: ui.navigate.to(f"/unblock_ip?captcha={captcha_text}"))
+
+@ui.page("/unblock_ip")
+async def unblock_ip(request:Request, captcha:str):
+    ip = get_client_ip(request)
+    # check if unblock request exists
+    if not app.storage.user.get("unblock_requests"):
+        ui.label("No unblock request found")
+        return
+    else:
+        unblock_request = None
+        if ip in app.storage.user["unblock_requests"]:
+            if app.storage.user["unblock_requests"][ip].lower() != captcha.lower():
+                ui.label("Captcha wrong")
+            else:
+                if ip in app.storage.general.get("blocked_ips", []):
+                    app.storage.general["blocked_ips"].remove(ip)
+                    ui.label("IP unblocked. You will be redirected soon...")
+                    # delete image
+                    os.remove(ip+'.png')
+                    ui.timer(3, lambda: ui.navigate.to("/"), once=True)
+                else:
+                    ui.label("IP not blocked")
+        else:
+            ui.label("No unblock request found")
 
 
 
